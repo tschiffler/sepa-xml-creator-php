@@ -11,6 +11,9 @@
 class SepaBuchung{
 	var $end2end, $iban, $bic, $kontoinhaber, $verwendungszweck, $amount;
 
+	// Mandatsinformationen für Lastschriften
+	var $mandatId, $mandatDatum, $mandatAenderung;
+	
 	function __construct() {
 		$this->end2end = "NOTPROVIDED";
 	}
@@ -38,21 +41,58 @@ class SepaBuchung{
 	function setBetrag($betrag) {
 		$this->amount = $betrag;
 	}
+	
+    /*
+     * Methode zum Setzen des Mandates - notwendig beim Generieren von Lastschriften. Wenn gewünscht kann
+     * nur die Mandats-ID gesetzt werden, hierbei wird das aktuelle Tagesdatum als Datum der Mandatserteilung
+     * genommen. Das Datum ist im Format (YYYY-mm-dd - bsp. 2013-11-02 zu übergeben)
+     * 
+     * @param String $id
+     * @param String $mandatDatum
+     * @param boolean $mandatAenderung - true wenn das Mandat seit letzer Erteilung geändert wurde
+     */
+	function setMandat($id, $mandatDatum = null, $mandatAenderung = true) {
+		$this->mandatId = $id;
+		$this->mandatAenderung = $mandatAenderung;
+
+		if (!isset($mandatDatum)) {
+			$this->mandatDatum = date('Y-m-d', time());	
+		} else {
+			$this->mandatDatum = $mandatDatum;
+		}
+	}
 }
 
 class SepaXmlCreator {
 	var $buchungssaetze = array();
 
-	var $debitorName, $debitorIban, $debitorBic;
+	var $accountName, $accountIban, $accountBic;
 	var $offset = 0;
 	var $waehrung = "EUR";
+	
+	// Mode = 1 -> Überweisung / Mode = 2 -> Basislastschrift
+	var $mode = 1;
+	
+	// Gläubiger-ID
+	var $glaeubigerId;
 
 	function setDebitorValues($name, $iban, $bic) {
-		$this->debitorName = $name;
-		$this->debitorIban = $iban;
-		$this->debitorBic = $bic;
+		trigger_error('Use setAccountValues($name, $iban, $bic) instead', E_USER_DEPRECATED);
+		
+		$this->setAccountValues($name, $iban, $bic);
+	}
+	
+	function setAccountValues($name, $iban, $bic) {
+		
+		$this->accountName = $name;
+		$this->accountIban = $iban;
+		$this->accountBic = $bic;
 	}
 
+	function setGlaeubigerId($glaeubigerId) {
+		$this->glaeubigerId = $glaeubigerId;
+	}
+	
 	function setCurrency($currency) {
 		$this->waehrung = $currency;
 	}
@@ -66,39 +106,70 @@ class SepaXmlCreator {
 	}
 
 	function generateSammelueberweisungXml() {
+		// Set Mode = 1 -> Sammelüberweisung
+		$this->mode = 1;
+		return $this->getGeneratedXml();
+	}
+	
+	function generateBasislastschriftXml() {
+		// Set Mode = 2 -> Basislastschrift
+		$this->mode = 2;
+		
+		return $this->getGeneratedXml();
+	}
+	
+	function getGeneratedXml() {	
 		$dom = new DOMDocument('1.0', 'utf-8');
-
+		
 		// Build Document-Root
 		$document = $dom->createElement('Document');
-		$document->setAttribute('xmlns', 'urn:iso:std:iso:20022:tech:xsd:pain.001.002.03');
-		$document->setAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
-		$document->setAttribute('xsi:schemaLocation', 'urn:iso:std:iso:20022:tech:xsd:pain.001.002.03 pain.001.002.03.xsd');
+		if ($this->mode == 2) {
+			$document->setAttribute('xmlns', 'urn:iso:std:iso:20022:tech:xsd:pain.008.002.02');
+			$document->setAttribute('xsi:schemaLocation', 'urn:iso:std:iso:20022:tech:xsd:pain.008.002.02 pain.008.002.02.xsd');
+		} else {
+			$document->setAttribute('xmlns', 'urn:iso:std:iso:20022:tech:xsd:pain.001.002.03');
+			$document->setAttribute('xsi:schemaLocation', 'urn:iso:std:iso:20022:tech:xsd:pain.001.002.03 pain.001.002.03.xsd');
+		}
+		$document->setAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');		
 		$dom->appendChild($document);
-
+		 
 		// Build Content-Root
-		$content = $dom->createElement('CstmrCdtTrfInitn');
+		if ($this->mode == 2) {
+			$content = $dom->createElement('CstmrDrctDbtInitn');
+		} else {
+			$content = $dom->createElement('CstmrCdtTrfInitn');
+		}
+		
 		$document->appendChild($content);
-
+		
 		// Build Header
 		$header = $dom->createElement('GrpHdr');
 		$content->appendChild($header);
-
+		
 		$creationTime = time();
-
+		
 		// Msg-ID
-		$header->appendChild($dom->createElement('MsgId', $this->debitorBic . '00' . date('YmdHis', $creationTime)));
+		$header->appendChild($dom->createElement('MsgId', $this->accountBic . '00' . date('YmdHis', $creationTime)));
 		$header->appendChild($dom->createElement('CreDtTm', date('Y-m-d', $creationTime) . 'T' . date('H:i:s', $creationTime) . '.000Z'));
 		$header->appendChild($dom->createElement('NbOfTxs', count($this->buchungssaetze)));
 		$header->appendChild($initatorName = $dom->createElement('InitgPty'));
-		$initatorName->appendChild($dom->createElement('Nm', $this->debitorName));
+		$initatorName->appendChild($dom->createElement('Nm', $this->accountName));
 
 		// PaymentInfo
 		$paymentInfo = $dom->createElement('PmtInf');
 		$content->appendChild($paymentInfo);
 
 		$paymentInfo->appendChild($dom->createElement('PmtInfId', 'PMT-ID0-' . date('YmdHis', $creationTime)));
-		// TRF = Transfer (Überweisung), TRA = CreditTransfer (Lastschrift)
-		$paymentInfo->appendChild($dom->createElement('PmtMtd', 'TRF'));
+		switch ($this->mode) {
+			case 2:
+				// 2 = Basislastschrift
+				$paymentInfo->appendChild($dom->createElement('PmtMtd', 'DD'));
+				break;
+			default:
+				// Default / 1 = Überweisung
+				$paymentInfo->appendChild($dom->createElement('PmtMtd', 'TRF'));
+				break;
+		}
 		$paymentInfo->appendChild($dom->createElement('BtchBookg', 'true'));
 		$paymentInfo->appendChild($dom->createElement('NbOfTxs', count($this->buchungssaetze)));
 		$paymentInfo->appendChild($dom->createElement('CtrlSum', number_format($this->getUmsatzsumme(), 2, '.', '')));
@@ -106,28 +177,70 @@ class SepaXmlCreator {
 		$tmp1->appendChild($tmp2 = $dom->createElement('SvcLvl'));
 		$tmp2->appendChild($dom->createElement('Cd', 'SEPA'));
 
+		if ($this->mode == 2) {
+			// zusätzliche Attribute für Lastschriften
+			$tmp1->appendChild($tmp2 = $dom->createElement('LclInstrm'));
+			$tmp2->appendChild($dom->createElement('Cd', 'CORE'));
+			$tmp1->appendChild($dom->createElement('SeqTp', 'FRST'));
+		}
+		
 		// Ausführungsdatum berechnen
 		$ausfuehrungszeit = $creationTime;
 		if ($this->offset > 0) {
 			$ausfuehrungszeit = $ausfuehrungszeit + (24 * 3600 * $this->offset);
 		}
-		$paymentInfo->appendChild($dom->createElement('ReqdExctnDt', date('Y-m-d', $ausfuehrungszeit)));
+		
+		if ($this->mode == 2) {
+			$paymentInfo->appendChild($dom->createElement('ReqdColltnDt', date('Y-m-d', $ausfuehrungszeit)));
+		} else {
+			$paymentInfo->appendChild($dom->createElement('ReqdExctnDt', date('Y-m-d', $ausfuehrungszeit)));
+		}
 
-		// Debitor Daten
-		$paymentInfo->appendChild($tmp1 = $dom->createElement('Dbtr'));
-		$tmp1->appendChild($dom->createElement('Nm', $this->debitorName));
-		$paymentInfo->appendChild($tmp1 = $dom->createElement('DbtrAcct'));
+		// eigene Account-Daten Daten
+		if ($this->mode == 2) {
+			$paymentInfo->appendChild($tmp1 = $dom->createElement('Cdtr'));
+		} else {
+			$paymentInfo->appendChild($tmp1 = $dom->createElement('Dbtr'));
+		}
+		$tmp1->appendChild($dom->createElement('Nm', $this->accountName));
+		
+		if ($this->mode == 2) {
+			$paymentInfo->appendChild($tmp1 = $dom->createElement('CdtrAcct'));
+		} else {
+			$paymentInfo->appendChild($tmp1 = $dom->createElement('DbtrAcct'));
+		}
+		
 		$tmp1->appendChild($tmp2 = $dom->createElement('Id'));
-		$tmp2->appendChild($dom->createElement('IBAN', $this->debitorIban));
-		$paymentInfo->appendChild($tmp1 = $dom->createElement('DbtrAgt'));
+		$tmp2->appendChild($dom->createElement('IBAN', $this->accountIban));
+		
+		if ($this->mode == 2) {
+			$paymentInfo->appendChild($tmp1 = $dom->createElement('CdtrAgt'));
+		} else {
+			$paymentInfo->appendChild($tmp1 = $dom->createElement('DbtrAgt'));
+		}
+		
 		$tmp1->appendChild($tmp2 = $dom->createElement('FinInstnId'));
-		$tmp2->appendChild($dom->createElement('BIC', $this->debitorBic));
+		$tmp2->appendChild($dom->createElement('BIC', $this->accountBic));
 
 		$paymentInfo->appendChild($dom->createElement('ChrgBr', 'SLEV'));
 
+		if ($this->mode == 2) {
+			$paymentInfo->appendChild($tmp1 = $dom->createElement('CdtrSchmeId'));
+			$tmp1->appendChild($tmp2 = $dom->createElement('Id'));
+			$tmp2->appendChild($tmp3 = $dom->createElement('PrvtId'));
+			$tmp3->appendChild($tmp4 = $dom->createElement('Othr'));
+			$tmp4->appendChild($dom->createElement('Id', $this->glaeubigerId));
+			$tmp4->appendChild($tmp5 = $dom->createElement('SchmeNm'));
+			$tmp5->appendChild($dom->createElement('Prtry', 'SEPA'));
+		}
+		
 		// Buchungssätze hinzufügen
 		foreach ($this->buchungssaetze as $buchungssatz) {
-			$paymentInfo->appendChild($buchung = $dom->createElement('CdtTrfTxInf'));
+			if ($this->mode == 2) {
+				$paymentInfo->appendChild($buchung = $dom->createElement('DrctDbtTxInf'));
+			} else {
+				$paymentInfo->appendChild($buchung = $dom->createElement('CdtTrfTxInf'));
+			}
 
 			// End2End setzen
 			if (isset($buchungssatz->end2end)) {
@@ -136,24 +249,59 @@ class SepaXmlCreator {
 			}
 
 			// Betrag
-			$buchung->appendChild($tmp1 = $dom->createElement('Amt'));
-			$tmp1->appendChild($tmp2 = $dom->createElement('InstdAmt', number_format($buchungssatz->amount, 2, '.', '')));
-			$tmp2->setAttribute('Ccy', $this->waehrung);
+			if ($this->mode == 2) {
+				$buchung->appendChild($tmp2 = $dom->createElement('InstdAmt', number_format($buchungssatz->amount, 2, '.', '')));
+				$tmp2->setAttribute('Ccy', $this->waehrung);
+			} else {
+				$buchung->appendChild($tmp1 = $dom->createElement('Amt'));
+				$tmp1->appendChild($tmp2 = $dom->createElement('InstdAmt', number_format($buchungssatz->amount, 2, '.', '')));
+				$tmp2->setAttribute('Ccy', $this->waehrung);
+			}
+			
+			if ($this->mode == 2) {
+				// Lastschrift -> Mandatsinformationen
+				$buchung->appendChild($tmp1 = $dom->createElement('DrctDbtTx'));
+				$tmp1->appendChild($tmp2 = $dom->createElement('MndtRltdInf'));
+				$tmp2->appendChild($dom->createElement('MndtId', $buchungssatz->mandatId));
+				$tmp2->appendChild($dom->createElement('DtOfSgntr', $buchungssatz->mandatDatum));
+				if ($buchungssatz->mandatAenderung) {
+					$tmp2->appendChild($dom->createElement('AmdmntInd', 'true'));
+				} else {
+					$tmp2->appendChild($dom->createElement('AmdmntInd', 'false'));
+				}
+			}
 
 			// Institut
-			$buchung->appendChild($tmp1 = $dom->createElement('CdtrAgt'));
+			if ($this->mode == 2) {
+				$buchung->appendChild($tmp1 = $dom->createElement('DbtrAgt'));
+			} else {
+				$buchung->appendChild($tmp1 = $dom->createElement('CdtrAgt'));
+			}
 			$tmp1->appendChild($tmp2 = $dom->createElement('FinInstnId'));
 			$tmp2->appendChild($dom->createElement('BIC', $buchungssatz->bic));
 
 			// Inhaber
-			$buchung->appendChild($tmp1 = $dom->createElement('Cdtr'));
+			if ($this->mode == 2) {
+				$buchung->appendChild($tmp1 = $dom->createElement('Dbtr'));
+			} else {
+				$buchung->appendChild($tmp1 = $dom->createElement('Cdtr'));
+			}
 			$tmp1->appendChild($dom->createElement('Nm', $buchungssatz->kontoinhaber));
 
 			// IBAN
-			$buchung->appendChild($tmp1 = $dom->createElement('CdtrAcct'));
+			if ($this->mode == 2) {
+				$buchung->appendChild($tmp1 = $dom->createElement('DbtrAcct'));
+			} else {
+				$buchung->appendChild($tmp1 = $dom->createElement('CdtrAcct'));
+			}
 			$tmp1->appendChild($tmp2 = $dom->createElement('Id'));
 			$tmp2->appendChild($dom->createElement('IBAN', $buchungssatz->iban));
 
+			if ($this->mode == 2) {
+				$buchung->appendChild($tmp1 = $dom->createElement('UltmtDbtr'));
+				$tmp1 = $dom->createElement('Nm', $buchung->kontoinhaber);
+			}
+			
 			// Verwendungszweck
 			$buchung->appendChild($tmp1 = $dom->createElement('RmtInf'));
 			$tmp1->appendChild($dom->createElement('Ustrd', $buchungssatz->verwendungszweck));
