@@ -10,5 +10,22 @@ Klasse: SepaXmlCreator
 Methode: generateSammelueberweisungXml
 Beispiel-Code: siehe ueberweisungExample.php
 
-2. Erstellung von SEPA Sammellastschriften
-- in Arbeit
+2. Erstellung von SEPA Basislastschriften / Sammellastschriften
+Klasse: SepaXmlCreator
+Methode: generateBasislastschriftXml
+Beispiel-Code: siehe lastschriftExample.php
+
+
+=========================================================
+Changelog: 
+25.11.2013
+- Umsetzung der SEPA Basislastschriften
+- Methode 'setDebitorValues' auf Deprecated gesetzt -> setAccountValues nutzen
+- Zahlenformat bei Beträgen > 1000 korrigiert
+
+14.11.2013
+- End2End Referenz auf NOTPROVIDED sofern nicht übergeben
+
+03.09.2013 
+- Veröffentlichung der Initialversion
+- Sammelüberweisungen
