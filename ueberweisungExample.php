@@ -7,12 +7,12 @@
 	$creator = new SepaXmlCreator();
 	
 	/*
-	 * Mit dem Debitor wird das Konto beschrieben, von welchem eine Überweisung erfolgt
+	 * Mit den Account-Werten wird das eigene Konto beschrieben
 	 * erster Parameter = Name
 	 * zweiter Parameter = IBAN
 	 * dritter Paramenter = BIC
 	 */ 
-	$creator->setDebitorValues('mein Name', 'meine IBAN', 'meine BIC');
+	$creator->setAccountValues('mein Name', 'meine IBAN', 'meine BIC');
 	
 	/*
 	 * Mit Hilfe eines Ausführungs-Offsets können Sie definieren, wann die Buchung durchgeführt wird. Die Anzahl 
