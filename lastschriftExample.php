@@ -20,7 +20,7 @@
 	$creator->setGlaeubigerId("DE98ZZZ09999999999");
 	
 	/*
-	 * Mit Hilfe eines Ausführungs-Offsets können Sie definieren, wann die Buchung durchgeführt wird. Die Anzahl 
+	 * Mit Hilfe eines Ausführungs-Offsets können Sie definieren, wann die Lastchrift gezogen wird. Die Anzahl 
 	 * der übergebenen Tage wird auf den aktuellen Kalendertag addiert
 	 * 
 	 * Beispiel 1
@@ -35,17 +35,17 @@
 	 */ 
 	$creator->setAusfuehrungOffset(7);
 	
-	// Erzeugung einer neuen Überweisung
+	// Erzeugung einer neuen Buchungssatz
 	$buchung = new SepaBuchung();
-	// gewünschter Überweisungsbetrag
+	// gewünschter Einzugsbetrag
 	$buchung->setBetrag(10);
 	// gewünschte End2End Referenz (OPTIONAL)
 	$buchung->setEnd2End('ID-00002');
-	// BIC des Empfängerinstituts
+	// BIC des Zahlungspflichtigen Institutes
 	$buchung->setBic('EMPFAENGERBIC');
-	// Name des Zahlungsempfängers
+	// Name des Zahlungspflichtigen
 	$buchung->setName('Mustermann, Max');
-	// IBAN des Zahlungsmpfängers
+	// IBAN des Zahlungspflichtigen
 	$buchung->setIban('DE1234566..');
 	// gewünschter Verwendungszweck (OPTIONAL)
 	$buchung->setVerwendungszweck('Test Buchung');
