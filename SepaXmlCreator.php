@@ -299,7 +299,7 @@ class SepaXmlCreator {
 
 			if ($this->mode == 2) {
 				$buchung->appendChild($tmp1 = $dom->createElement('UltmtDbtr'));
-				$tmp1 = $dom->createElement('Nm', $buchung->kontoinhaber);
+				$tmp1 = $dom->createElement('Nm', $buchungssatz->kontoinhaber);
 			}
 			
 			// Verwendungszweck
