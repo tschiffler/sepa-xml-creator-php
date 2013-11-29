@@ -303,8 +303,10 @@ class SepaXmlCreator {
 			}
 			
 			// Verwendungszweck
-			$buchung->appendChild($tmp1 = $dom->createElement('RmtInf'));
-			$tmp1->appendChild($dom->createElement('Ustrd', $buchungssatz->verwendungszweck));
+			if (strlen($buchungssatz->verwendungszweck) > 0) {
+				$buchung->appendChild($tmp1 = $dom->createElement('RmtInf'));
+				$tmp1->appendChild($dom->createElement('Ustrd', $buchungssatz->verwendungszweck));
+			}
 		}
 
 		// XML exportieren
