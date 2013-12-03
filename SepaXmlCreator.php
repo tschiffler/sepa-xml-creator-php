@@ -67,7 +67,7 @@ class SepaXmlCreator {
 	var $buchungssaetze = array();
 
 	var $accountName, $accountIban, $accountBic;
-	var $offset = 0;
+	var $offset = 0, $fixedDate;
 	var $waehrung = "EUR";
 	
 	// Mode = 1 -> Überweisung / Mode = 2 -> Basislastschrift
@@ -103,6 +103,10 @@ class SepaXmlCreator {
 
 	function setAusfuehrungOffset($offset) {
 		$this->offset = $offset;
+	}
+	
+	function setAusfuehrungDatum($datum) {
+		$this->fixedDate = $datum;
 	}
 
 	function generateSammelueberweisungXml() {
@@ -185,15 +189,21 @@ class SepaXmlCreator {
 		}
 		
 		// Ausführungsdatum berechnen
-		$ausfuehrungszeit = $creationTime;
-		if ($this->offset > 0) {
-			$ausfuehrungszeit = $ausfuehrungszeit + (24 * 3600 * $this->offset);
+		if (isset($this->fixedDate)) {
+			$ausfuehrungsdatum = $this->fixedDate;
+		} else {
+			$ausfuehrungszeit = $creationTime;
+			if ($this->offset > 0) {
+				$ausfuehrungszeit = $ausfuehrungszeit + (24 * 3600 * $this->offset);
+			}
+			
+			$ausfuehrungsdatum = date('Y-m-d', $ausfuehrungszeit);
 		}
 		
 		if ($this->mode == 2) {
-			$paymentInfo->appendChild($dom->createElement('ReqdColltnDt', date('Y-m-d', $ausfuehrungszeit)));
+			$paymentInfo->appendChild($dom->createElement('ReqdColltnDt', $ausfuehrungsdatum));
 		} else {
-			$paymentInfo->appendChild($dom->createElement('ReqdExctnDt', date('Y-m-d', $ausfuehrungszeit)));
+			$paymentInfo->appendChild($dom->createElement('ReqdExctnDt', $ausfuehrungsdatum);
 		}
 
 		// eigene Account-Daten Daten
