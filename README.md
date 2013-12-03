@@ -18,6 +18,10 @@ Beispiel-Code: siehe lastschriftExample.php
 
 =========================================================
 Changelog: 
+
+03.12.2013
+- fixes Ausführungsdatum anstatt Offset zusätzlich ermöglichen
+
 25.11.2013
 - Umsetzung der SEPA Basislastschriften
 - Methode 'setDebitorValues' auf Deprecated gesetzt -> setAccountValues nutzen
