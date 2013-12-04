@@ -72,6 +72,7 @@ class SepaXmlCreator {
 	
 	// Mode = 1 -> Überweisung / Mode = 2 -> Basislastschrift
 	var $mode = 1;
+	var $isFirst = true;
 	
 	// Gläubiger-ID
 	var $glaeubigerId;
@@ -120,6 +121,10 @@ class SepaXmlCreator {
 		$this->mode = 2;
 		
 		return $this->getGeneratedXml();
+	}
+	
+	function setIsFolgelastschrift() {
+		$this->isFirst = false;
 	}
 	
 	function getGeneratedXml() {	
@@ -185,7 +190,11 @@ class SepaXmlCreator {
 			// zusätzliche Attribute für Lastschriften
 			$tmp1->appendChild($tmp2 = $dom->createElement('LclInstrm'));
 			$tmp2->appendChild($dom->createElement('Cd', 'CORE'));
-			$tmp1->appendChild($dom->createElement('SeqTp', 'FRST'));
+			if ($this->isFirst) {
+				$tmp1->appendChild($dom->createElement('SeqTp', 'FRST'));
+			} else {
+				$tmp1->appendChild($dom->createElement('SeqTp', 'RCUR'));
+			}
 		}
 		
 		// Ausführungsdatum berechnen
