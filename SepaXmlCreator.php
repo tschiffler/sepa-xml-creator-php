@@ -212,7 +212,7 @@ class SepaXmlCreator {
 		if ($this->mode == 2) {
 			$paymentInfo->appendChild($dom->createElement('ReqdColltnDt', $ausfuehrungsdatum));
 		} else {
-			$paymentInfo->appendChild($dom->createElement('ReqdExctnDt', $ausfuehrungsdatum);
+			$paymentInfo->appendChild($dom->createElement('ReqdExctnDt', $ausfuehrungsdatum));
 		}
 
 		// eigene Account-Daten Daten
