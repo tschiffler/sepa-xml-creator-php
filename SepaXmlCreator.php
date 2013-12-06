@@ -8,12 +8,12 @@
  *
  */
 
-class SepaBuchung{
+class SepaBuchung {
 	var $end2end, $iban, $bic, $kontoinhaber, $verwendungszweck, $amount;
 
 	// Mandatsinformationen für Lastschriften
 	var $mandatId, $mandatDatum, $mandatAenderung;
-	
+
 	function __construct() {
 		$this->end2end = "NOTPROVIDED";
 	}
@@ -23,7 +23,7 @@ class SepaBuchung{
 	}
 
 	function setIban($iban) {
-		$this->iban = str_replace(' ','',$iban);
+		$this->iban = str_replace(' ', '', $iban);
 	}
 
 	function setBic($bic) {
@@ -41,22 +41,22 @@ class SepaBuchung{
 	function setBetrag($betrag) {
 		$this->amount = $betrag;
 	}
-	
-    /*
-     * Methode zum Setzen des Mandates - notwendig beim Generieren von Lastschriften. Wenn gewünscht kann
-     * nur die Mandats-ID gesetzt werden, hierbei wird das aktuelle Tagesdatum als Datum der Mandatserteilung
-     * genommen. Das Datum ist im Format (YYYY-mm-dd - bsp. 2013-11-02 zu übergeben)
-     * 
-     * @param String $id
-     * @param String $mandatDatum
-     * @param boolean $mandatAenderung - true wenn das Mandat seit letzer Erteilung geändert wurde
-     */
+
+	/*
+	 * Methode zum Setzen des Mandates - notwendig beim Generieren von Lastschriften. Wenn gewünscht kann
+	 * nur die Mandats-ID gesetzt werden, hierbei wird das aktuelle Tagesdatum als Datum der Mandatserteilung
+	 * genommen. Das Datum ist im Format (YYYY-mm-dd - bsp. 2013-11-02 zu übergeben)
+	 *
+	 * @param String $id
+	 * @param String $mandatDatum
+	 * @param boolean $mandatAenderung - true wenn das Mandat seit letzer Erteilung geändert wurde
+	 */
 	function setMandat($id, $mandatDatum = null, $mandatAenderung = true) {
 		$this->mandatId = $id;
 		$this->mandatAenderung = $mandatAenderung;
 
 		if (!isset($mandatDatum)) {
-			$this->mandatDatum = date('Y-m-d', time());	
+			$this->mandatDatum = date('Y-m-d', time());
 		} else {
 			$this->mandatDatum = $mandatDatum;
 		}
@@ -69,24 +69,24 @@ class SepaXmlCreator {
 	var $accountName, $accountIban, $accountBic;
 	var $offset = 0, $fixedDate;
 	var $waehrung = "EUR";
-	
+
 	// Mode = 1 -> Überweisung / Mode = 2 -> Basislastschrift
 	var $mode = 1;
 	var $isFirst = true;
-	
+
 	// Gläubiger-ID
 	var $glaeubigerId;
 
-    private $xmlerrors;
+	private $xmlerrors;
 
 	function setDebitorValues($name, $iban, $bic) {
 		trigger_error('Use setAccountValues($name, $iban, $bic) instead', E_USER_DEPRECATED);
-		
+
 		$this->setAccountValues($name, $iban, $bic);
 	}
-	
+
 	function setAccountValues($name, $iban, $bic) {
-		
+
 		$this->accountName = $name;
 		$this->accountIban = $iban;
 		$this->accountBic = $bic;
@@ -95,7 +95,7 @@ class SepaXmlCreator {
 	function setGlaeubigerId($glaeubigerId) {
 		$this->glaeubigerId = $glaeubigerId;
 	}
-	
+
 	function setCurrency($currency) {
 		$this->waehrung = $currency;
 	}
@@ -107,7 +107,7 @@ class SepaXmlCreator {
 	function setAusfuehrungOffset($offset) {
 		$this->offset = $offset;
 	}
-	
+
 	function setAusfuehrungDatum($datum) {
 		$this->fixedDate = $datum;
 	}
@@ -117,21 +117,21 @@ class SepaXmlCreator {
 		$this->mode = 1;
 		return $this->getGeneratedXml();
 	}
-	
+
 	function generateBasislastschriftXml() {
 		// Set Mode = 2 -> Basislastschrift
 		$this->mode = 2;
-		
+
 		return $this->getGeneratedXml();
 	}
-	
+
 	function setIsFolgelastschrift() {
 		$this->isFirst = false;
 	}
-	
-	function getGeneratedXml() {	
+
+	function getGeneratedXml() {
 		$dom = new DOMDocument('1.0', 'utf-8');
-		
+
 		// Build Document-Root
 		$document = $dom->createElement('Document');
 		if ($this->mode == 2) {
@@ -141,24 +141,24 @@ class SepaXmlCreator {
 			$document->setAttribute('xmlns', 'urn:iso:std:iso:20022:tech:xsd:pain.001.002.03');
 			$document->setAttribute('xsi:schemaLocation', 'urn:iso:std:iso:20022:tech:xsd:pain.001.002.03 pain.001.002.03.xsd');
 		}
-		$document->setAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');		
+		$document->setAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
 		$dom->appendChild($document);
-		 
+
 		// Build Content-Root
 		if ($this->mode == 2) {
 			$content = $dom->createElement('CstmrDrctDbtInitn');
 		} else {
 			$content = $dom->createElement('CstmrCdtTrfInitn');
 		}
-		
+
 		$document->appendChild($content);
-		
+
 		// Build Header
 		$header = $dom->createElement('GrpHdr');
 		$content->appendChild($header);
-		
+
 		$creationTime = time();
-		
+
 		// Msg-ID
 		$header->appendChild($dom->createElement('MsgId', $this->accountBic . '00' . date('YmdHis', $creationTime)));
 		$header->appendChild($dom->createElement('CreDtTm', date('Y-m-d', $creationTime) . 'T' . date('H:i:s', $creationTime) . '.000Z'));
@@ -198,7 +198,7 @@ class SepaXmlCreator {
 				$tmp1->appendChild($dom->createElement('SeqTp', 'RCUR'));
 			}
 		}
-		
+
 		// Ausführungsdatum berechnen
 		if (isset($this->fixedDate)) {
 			$ausfuehrungsdatum = $this->fixedDate;
@@ -207,10 +207,10 @@ class SepaXmlCreator {
 			if ($this->offset > 0) {
 				$ausfuehrungszeit = $ausfuehrungszeit + (24 * 3600 * $this->offset);
 			}
-			
+
 			$ausfuehrungsdatum = date('Y-m-d', $ausfuehrungszeit);
 		}
-		
+
 		if ($this->mode == 2) {
 			$paymentInfo->appendChild($dom->createElement('ReqdColltnDt', $ausfuehrungsdatum));
 		} else {
@@ -224,22 +224,22 @@ class SepaXmlCreator {
 			$paymentInfo->appendChild($tmp1 = $dom->createElement('Dbtr'));
 		}
 		$tmp1->appendChild($dom->createElement('Nm', $this->accountName));
-		
+
 		if ($this->mode == 2) {
 			$paymentInfo->appendChild($tmp1 = $dom->createElement('CdtrAcct'));
 		} else {
 			$paymentInfo->appendChild($tmp1 = $dom->createElement('DbtrAcct'));
 		}
-		
+
 		$tmp1->appendChild($tmp2 = $dom->createElement('Id'));
 		$tmp2->appendChild($dom->createElement('IBAN', $this->accountIban));
-		
+
 		if ($this->mode == 2) {
 			$paymentInfo->appendChild($tmp1 = $dom->createElement('CdtrAgt'));
 		} else {
 			$paymentInfo->appendChild($tmp1 = $dom->createElement('DbtrAgt'));
 		}
-		
+
 		$tmp1->appendChild($tmp2 = $dom->createElement('FinInstnId'));
 		$tmp2->appendChild($dom->createElement('BIC', $this->accountBic));
 
@@ -254,7 +254,7 @@ class SepaXmlCreator {
 			$tmp4->appendChild($tmp5 = $dom->createElement('SchmeNm'));
 			$tmp5->appendChild($dom->createElement('Prtry', 'SEPA'));
 		}
-		
+
 		// Buchungssätze hinzufügen
 		foreach ($this->buchungssaetze as $buchungssatz) {
 			if ($this->mode == 2) {
@@ -278,7 +278,7 @@ class SepaXmlCreator {
 				$tmp1->appendChild($tmp2 = $dom->createElement('InstdAmt', number_format($buchungssatz->amount, 2, '.', '')));
 				$tmp2->setAttribute('Ccy', $this->waehrung);
 			}
-			
+
 			if ($this->mode == 2) {
 				// Lastschrift -> Mandatsinformationen
 				$buchung->appendChild($tmp1 = $dom->createElement('DrctDbtTx'));
@@ -320,9 +320,9 @@ class SepaXmlCreator {
 
 			if ($this->mode == 2) {
 				$buchung->appendChild($tmp1 = $dom->createElement('UltmtDbtr'));
-                $dom->createElement('Nm', $buchungssatz->kontoinhaber);
+				$dom->createElement('Nm', $buchungssatz->kontoinhaber);
 			}
-			
+
 			// Verwendungszweck
 			if (strlen($buchungssatz->verwendungszweck) > 0) {
 				$buchung->appendChild($tmp1 = $dom->createElement('RmtInf'));
@@ -344,52 +344,51 @@ class SepaXmlCreator {
 		return $betrag;
 	}
 
-    public function validateBasislastschriftXml($xmlfile) {
-        return $this->validateXML($xmlfile, 'pain.008.002.02.xsd');
-    }
+	public function validateBasislastschriftXml($xmlfile) {
+		return $this->validateXML($xmlfile, 'pain.008.002.02.xsd');
+	}
 
-    public function validateUeberweisungXml($xmlfile) {
-        return $this->validateXML($xmlfile, 'pain.001.002.03.xsd');
-}
+	public function validateUeberweisungXml($xmlfile) {
+		return $this->validateXML($xmlfile, 'pain.001.002.03.xsd');
+	}
 
-    protected function validateXML($xmlfile, $xsdfile) {
-        libxml_use_internal_errors(true);
+	protected function validateXML($xmlfile, $xsdfile) {
+		libxml_use_internal_errors(true);
 
-        $feed = new DOMDocument();
+		$feed = new DOMDocument();
 
-        $result = $feed->load($xmlfile);
-        if ($result === false) {
-            $this->xmlerrors[] = "Document is not well formed\n";
-        }
-        if (@($feed->schemaValidate(dirname(__FILE__) . '/' . $xsdfile))) {
+		$result = $feed->load($xmlfile);
+		if ($result === false) {
+			$this->xmlerrors[] = "Document is not well formed\n";
+		}
+		if (@($feed->schemaValidate(dirname(__FILE__) . '/' . $xsdfile))) {
 
-            return true;
-        } else {
-            $this->xmlerrors[] = "! Document is not valid:\n";
-            $errors = libxml_get_errors();
+			return true;
+		} else {
+			$this->xmlerrors[] = "! Document is not valid:\n";
+			$errors = libxml_get_errors();
 
-            foreach ($errors as $error) {
-                $this->xmlerrors[] = "---\n" . sprintf("file: %s, line: %s, column: %s, level: %s, code: %s\nError: %s",
-                        basename($error->file),
-                        $error->line,
-                        $error->column,
-                        $error->level,
-                        $error->code,
-                        $error->message
-                    );
-            }
-        }
-        return false;
-    }
+			foreach ($errors as $error) {
+				$this->xmlerrors[] = "---\n" . sprintf("file: %s, line: %s, column: %s, level: %s, code: %s\nError: %s",
+						basename($error->file),
+						$error->line,
+						$error->column,
+						$error->level,
+						$error->code,
+						$error->message
+					);
+			}
+		}
+		return false;
+	}
 
-    public function printXmlErrors() {
+	public function printXmlErrors() {
 
-        if (!is_array($this->xmlerrors)) return;
-        foreach ($this->xmlerrors as $error) {
-            echo $error;
-
-        }
-    }
+		if (!is_array($this->xmlerrors)) return;
+		foreach ($this->xmlerrors as $error) {
+			echo $error;
+		}
+	}
 }
 
 ?>
