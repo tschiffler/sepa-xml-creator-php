@@ -68,6 +68,11 @@
 	$creator->addBuchung($buchung);
 	
 	// Nun kann die XML-Datei über den Aufruf der entsprechenden Methode generiert werden
-	echo $creator->generateBasislastschriftXml();
+$sepaxml = $creator->generateBasislastschriftXml();
+echo $sepaxml;
+file_put_contents('sepalastschrift-example.xml', $sepaxml);
+$creator->validateBasislastschriftXml('sepalastschrift-example.xml');
+$creator->printXmlErrors();
+
 	
 ?>
