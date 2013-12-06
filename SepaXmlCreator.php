@@ -77,6 +77,8 @@ class SepaXmlCreator {
 	// Gläubiger-ID
 	var $glaeubigerId;
 
+    private $xmlerrors;
+
 	function setDebitorValues($name, $iban, $bic) {
 		trigger_error('Use setAccountValues($name, $iban, $bic) instead', E_USER_DEPRECATED);
 		
@@ -341,8 +343,53 @@ class SepaXmlCreator {
 
 		return $betrag;
 	}
+
+    public function validateBasislastschriftXml($xmlfile) {
+        return $this->validateXML($xmlfile, 'pain.008.002.02.xsd');
+    }
+
+    public function validateUeberweisungXml($xmlfile) {
+        return $this->validateXML($xmlfile, 'pain.001.002.03.xsd');
 }
 
+    protected function validateXML($xmlfile, $xsdfile) {
+        libxml_use_internal_errors(true);
 
+        $feed = new DOMDocument();
+
+        $result = $feed->load($xmlfile);
+        if ($result === false) {
+            $this->xmlerrors[] = "Document is not well formed\n";
+        }
+        if (@($feed->schemaValidate(dirname(__FILE__) . '/' . $xsdfile))) {
+
+            return true;
+        } else {
+            $this->xmlerrors[] = "! Document is not valid:\n";
+            $errors = libxml_get_errors();
+
+            foreach ($errors as $error) {
+                $this->xmlerrors[] = "---\n" . sprintf("file: %s, line: %s, column: %s, level: %s, code: %s\nError: %s",
+                        basename($error->file),
+                        $error->line,
+                        $error->column,
+                        $error->level,
+                        $error->code,
+                        $error->message
+                    );
+            }
+        }
+        return false;
+    }
+
+    public function printXmlErrors() {
+
+        if (!is_array($this->xmlerrors)) return;
+        foreach ($this->xmlerrors as $error) {
+            echo $error;
+
+        }
+    }
+}
 
 ?>
