@@ -12,7 +12,7 @@
 	 * zweiter Parameter = IBAN
 	 * dritter Paramenter = BIC
 	 */ 
-	$creator->setAccountValues('mein Name', 'meine IBAN', 'meine BIC');
+	$creator->setAccountValues('mein Name', 'DE1234567MEINE', 'WELADED1GRL');
 	
 	/*
 	 * Mit Hilfe eines Ausführungs-Offsets können Sie definieren, wann die Buchung durchgeführt wird. Die Anzahl 
@@ -37,11 +37,11 @@
 	// gewünschte End2End Referenz (OPTIONAL)
 	$buchung->setEnd2End('ID-00002');
 	// BIC des Empfängerinstituts
-	$buchung->setBic('EMPFAENGERBIC');
+	$buchung->setBic('WELADED1GRL');
 	// Name des Zahlungsempfängers
 	$buchung->setName('Mustermann, Max');
 	// IBAN des Zahlungsmpfängers
-	$buchung->setIban('DE1234566..');
+	$buchung->setIban('DE123456789');
 	// gewünschter Verwendungszweck (OPTIONAL)
 	$buchung->setVerwendungszweck('Test Buchung');
 	// Buchung zur Liste hinzufügen
@@ -50,9 +50,9 @@
 	// Dies kann beliebig oft wiederholt werden ...
 	$buchung = new SepaBuchung();
 	$buchung->setBetrag(7);
-	$buchung->setBic('EMPFAENGERBIC');
+	$buchung->setBic('WELADED1GRL');
 	$buchung->setName('Mustermann, Max');
-	$buchung->setIban('DE1234566..');
+	$buchung->setIban('DE123456789');
 	$creator->addBuchung($buchung);
 	
 	// Nun kann die XML-Datei über den Aufruf der entsprechenden Methode generiert werden
