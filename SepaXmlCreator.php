@@ -108,7 +108,7 @@ class SepaXmlCreator {
 	var $glaeubigerId;
 	
 	// XML-Errors
-	private $xmlErrors;
+	private $xmlerrors;
 
 	function setDebitorValues($name, $iban, $bic) {
 		trigger_error('Use setAccountValues($name, $iban, $bic) instead', E_USER_DEPRECATED);
