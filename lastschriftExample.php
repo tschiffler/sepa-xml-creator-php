@@ -12,7 +12,7 @@
 	 * zweiter Parameter = IBAN
 	 * dritter Paramenter = BIC
 	 */ 
-	$creator->setAccountValues('mein Name', 'meine IBAN', 'meine BIC');
+	$creator->setAccountValues('mein Name', 'DE1234566789', 'WELADED1GRL');
 	
 	/*
 	 * Setzen Sie von der Bundesbank übermittelte Gläubiger-ID 
@@ -42,11 +42,11 @@
 	// gewünschte End2End Referenz (OPTIONAL)
 	$buchung->setEnd2End('ID-00002');
 	// BIC des Zahlungspflichtigen Institutes
-	$buchung->setBic('EMPFAENGERBIC');
+	$buchung->setBic('WELADED1GRL');
 	// Name des Zahlungspflichtigen
 	$buchung->setName('Mustermann, Max');
 	// IBAN des Zahlungspflichtigen
-	$buchung->setIban('DE1234566..');
+	$buchung->setIban('DE123456678');
 	// gewünschter Verwendungszweck (OPTIONAL)
 	$buchung->setVerwendungszweck('Test Buchung');
 	// Referenz auf das vom Kunden erteilte Lastschriftmandat
@@ -60,14 +60,17 @@
 	// Dies kann beliebig oft wiederholt werden ...
 	$buchung = new SepaBuchung();
 	$buchung->setBetrag(7);
-	$buchung->setBic('EMPFAENGERBIC');
+	$buchung->setBic('WELADED1GRL');
 	$buchung->setName('Mustermann, Max');
-	$buchung->setIban('DE1234566..');
+	$buchung->setIban('DE123456678');
 	// weitere felder nicht übergeben = heutige erteilung
 	$buchung->setMandat("MANDAT0002");
 	$creator->addBuchung($buchung);
 	
 	// Nun kann die XML-Datei über den Aufruf der entsprechenden Methode generiert werden
-	echo $creator->generateBasislastschriftXml();
-	
+	$sepaxml = $creator->generateBasislastschriftXml();
+	echo $sepaxml;
+	file_put_contents('sepalastschrift-example.xml', $sepaxml);
+	$creator->validateBasislastschriftXml('sepalastschrift-example.xml');
+	$creator->printXmlErrors();
 ?>
