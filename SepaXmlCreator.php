@@ -19,7 +19,7 @@ class SepaBuchung{
 	}
 
 	function setEnd2End($end2end) {
-		$this->end2end = $end2end;
+		$this->end2end = normalizeString($end2end);
 	}
 
 	function setIban($iban) {
@@ -31,11 +31,11 @@ class SepaBuchung{
 	}
 
 	function setName($name) {
-		$this->kontoinhaber = $name;
+		$this->kontoinhaber = normalizeString($name);
 	}
 
 	function setVerwendungszweck($verwendungszweck) {
-		$this->verwendungszweck = $verwendungszweck;
+		$this->verwendungszweck = normalizeString($verwendungszweck);
 	}
 
 	function setBetrag($betrag) {
@@ -61,6 +61,36 @@ class SepaBuchung{
 			$this->mandatDatum = $mandatDatum;
 		}
 	}
+	
+	function normalizeString($input) {
+		// Only below characters can be used within the XML tags according the guideline.
+		// a b c d e f g h i j k l m n o p q r s t u v w x y z
+		// A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+		// 0 1 2 3 4 5 6 7 8 9
+		// / - ? : ( ) . , ‘ +
+		// Space
+		//
+		// Create a normalized array and cleanup the string $XMLText for unexpected characters in names
+		$normalizeChars = array(
+				'Á'=>'A', 'À'=>'A', 'Â'=>'A', 'Ã'=>'A', 'Å'=>'A', 'Ä'=>'Ae', 'Æ'=>'AE', 'Ç'=>'C',
+				'É'=>'E', 'È'=>'E', 'Ê'=>'E', 'Ë'=>'E', 'Í'=>'I', 'Ì'=>'I', 'Î'=>'I', 'Ï'=>'I', 'Ð'=>'Eth',
+				'Ñ'=>'N', 'Ó'=>'O', 'Ò'=>'O', 'Ô'=>'O', 'Õ'=>'O', 'Öe'=>'O', 'Ø'=>'O',
+				'Ú'=>'U', 'Ù'=>'U', 'Û'=>'U', 'Ü'=>'Ue', 'Ý'=>'Y',
+	
+				'á'=>'a', 'à'=>'a', 'â'=>'a', 'ã'=>'a', 'å'=>'a', 'ä'=>'ae', 'æ'=>'ae', 'ç'=>'c',
+				'é'=>'e', 'è'=>'e', 'ê'=>'e', 'ë'=>'e', 'í'=>'i', 'ì'=>'i', 'î'=>'i', 'ï'=>'i', 'ð'=>'eth',
+				'ñ'=>'n', 'ó'=>'o', 'ò'=>'o', 'ô'=>'o', 'õ'=>'o', 'ö'=>'oe', 'ø'=>'o',
+				'ú'=>'u', 'ù'=>'u', 'û'=>'u', 'ü'=>'ue', 'ý'=>'y',
+	
+				'ß'=>'ss', 'þ'=>'thorn', 'ÿ'=>'y',
+	
+				'&'=>'u.', '@'=>'at', '#'=>'h', '$'=>'s', '%'=>'perc', '^'=>'-','*'=>'-'
+						);
+	
+		$output = strtr($input, $normalizeChars);
+	
+		return $output;
+	}
 }
 
 class SepaXmlCreator {
@@ -76,6 +106,9 @@ class SepaXmlCreator {
 	
 	// Gläubiger-ID
 	var $glaeubigerId;
+	
+	// XML-Errors
+	private $xmlErrors;
 
 	function setDebitorValues($name, $iban, $bic) {
 		trigger_error('Use setAccountValues($name, $iban, $bic) instead', E_USER_DEPRECATED);
@@ -318,7 +351,7 @@ class SepaXmlCreator {
 
 			if ($this->mode == 2) {
 				$buchung->appendChild($tmp1 = $dom->createElement('UltmtDbtr'));
-				$tmp1 = $dom->createElement('Nm', $buchungssatz->kontoinhaber);
+				$tmp1->appendChild($dom->createElement('Nm', $buchungssatz->kontoinhaber));
 			}
 			
 			// Verwendungszweck
@@ -340,6 +373,53 @@ class SepaXmlCreator {
 		}
 
 		return $betrag;
+	}
+	
+	public function validateBasislastschriftXml($xmlfile) {
+		return $this->validateXML($xmlfile, 'pain.008.002.02.xsd');
+	}
+	
+	public function validateUeberweisungXml($xmlfile) {
+		return $this->validateXML($xmlfile, 'pain.001.002.03.xsd');
+	}
+	
+	protected function validateXML($xmlfile, $xsdfile) {
+		libxml_use_internal_errors(true);
+	
+		$feed = new DOMDocument();
+	
+		$result = $feed->load($xmlfile);
+		if ($result === false) {
+			$this->xmlerrors[] = "Document is not well formed\n";
+		}
+		if (@($feed->schemaValidate(dirname(__FILE__) . '/' . $xsdfile))) {
+	
+			return true;
+		} else {
+			$this->xmlerrors[] = "! Document is not valid:\n";
+			$errors = libxml_get_errors();
+	
+			foreach ($errors as $error) {
+				$this->xmlerrors[] = "---\n" . sprintf("file: %s, line: %s, column: %s, level: %s, code: %s\nError: %s",
+						basename($error->file),
+						$error->line,
+						$error->column,
+						$error->level,
+						$error->code,
+						$error->message
+				);
+			}
+		}
+		return false;
+	}
+	
+	public function printXmlErrors() {
+	
+		if (!is_array($this->xmlerrors)) return;
+		foreach ($this->xmlerrors as $error) {
+			echo $error;
+	
+		}
 	}
 }
 
