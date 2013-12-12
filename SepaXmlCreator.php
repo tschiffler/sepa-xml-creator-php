@@ -19,7 +19,7 @@ class SepaBuchung{
 	}
 
 	function setEnd2End($end2end) {
-		$this->end2end = normalizeString($end2end);
+		$this->end2end = $this->normalizeString($end2end);
 	}
 
 	function setIban($iban) {
@@ -31,11 +31,11 @@ class SepaBuchung{
 	}
 
 	function setName($name) {
-		$this->kontoinhaber = normalizeString($name);
+		$this->kontoinhaber = $this->normalizeString($name);
 	}
 
 	function setVerwendungszweck($verwendungszweck) {
-		$this->verwendungszweck = normalizeString($verwendungszweck);
+		$this->verwendungszweck = $this->normalizeString($verwendungszweck);
 	}
 
 	function setBetrag($betrag) {
