@@ -28,7 +28,7 @@
 	 * Offset nicht übergeben
 	 * Ausführung -> Heute bzw. nächst möglich
 	 * 
-	 * Beispiel 1
+	 * Beispiel 2
 	 * heute = 1. Juni 2013
 	 * Offset 3
 	 * Ausführung -> 4. Juni 2013
