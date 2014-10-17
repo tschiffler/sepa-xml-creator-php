@@ -375,6 +375,10 @@ class SepaXmlCreator {
 		return $betrag;
 	}
 	
+	function getAnzahlUmsaetze() {
+		return count($this->buchungssaetze);
+	}
+	
 	public function validateBasislastschriftXml($xmlfile) {
 		return $this->validateXML($xmlfile, 'pain.008.002.02.xsd');
 	}
