@@ -1,5 +1,15 @@
 <?php
 /*
+ * SepaXmlCreator - by Thomas Schiffler.de modified by Ilya Beliaev
+ * http://www.ThomasSchiffler.de/2013_09/code-schnipsel/sepa-sammeluberweisung-xml-datei-mit-php-erstellen
+ *
+ * Copyright (c) 2013 Thomas Schiffler (http://www.ThomasSchiffler.de
+ * GPL (http://www.opensource.org/licenses/gpl-license.php) license.
+ * 
+ */
+
+<?php
+/*
  * SepaXmlCreator - by Thomas Schiffler.de
  * http://www.ThomasSchiffler.de/2013_09/code-schnipsel/sepa-sammeluberweisung-xml-datei-mit-php-erstellen
  *
@@ -7,91 +17,316 @@
  * GPL (http://www.opensource.org/licenses/gpl-license.php) license.
  *
  */
-
 class SepaBuchung{
-	var $end2end, $iban, $bic, $kontoinhaber, $verwendungszweck, $amount;
+    
+    private $end2end = "NOTPROVIDED";
+    private $iban = "";
+    private $bic = "";
+    private $kontoinhaber = "";
+    private $verwendungszweck = "";
+    private $amount = 0.00;
+    private $currency = "EUR";
 
-	// Mandatsinformationen für Lastschriften
-	var $mandatId, $mandatDatum, $mandatAenderung;
+    /**
+     * Mandate Information for direct Debig
+     */
+    private $mandatId;
+    private $mandatDatum;
+    private $mandatAenderung;
+
+    /**
+     * Set end 2 end reference
+     * @param string $end2end
+     * @return \SepaBuchung
+     */
+    public function setEnd2End($end2end) {
+        $this->end2end = $this->normalizeString($end2end);
+        return $this;
+    }
+
+    /**
+     * Get end 2 end reference
+     * @return string
+     */
+    public function getEnd2End(){
+        return $this->end2end;
+    }
+
+    /**
+     * Set IBAN of customer
+     * @param string $iban
+     * @return \SepaBuchung
+     */
+    public function setIban($iban) {
+        $this->iban = str_replace(' ','',$iban);
+        return $this;
+    }
+
+    /**
+     * Get IBAN of customer
+     * @return string
+     */
+    public function getIban(){
+        return $this->iban;
+    }
+
+    /**
+     * Set bic of customer
+     * @param string $bic
+     * @return \SepaBuchung
+     */
+    public function setBic($bic) {
+        $this->bic = $bic;
+        return $this;
+    }
+
+    /**
+     * get Bic of customer
+     * @return type
+     */
+    public function getBic(){
+        return $this->bic;
+    }
+
+    /**
+     * Set Name of customer
+     * @param string $name
+     * @return \SepaBuchung
+     */
+    public function setName($name) {
+        $this->kontoinhaber = $this->normalizeString($name);
+        return $this;
+    }
+
+    /**
+     * Get Name of customer
+     * @return string
+     */
+    public function getName(){
+        return $this->kontoinhaber;
+    }
+
+    /**
+     * set Transaction information 
+     * @deprecated since version 0.2
+     * @deprecated use setTransactionInformation instead
+     * @param string $verwendungszweck
+     * @return \SepaBuchung
+     */
+    public function setVerwendungszweck($verwendungszweck) {
+        $this->verwendungszweck = $this->normalizeString($verwendungszweck);
+        return $this;
+    }
+
+    /**
+     * Get Transaction information for direct debit
+     * @deprecated since version 0.2
+     * @deprecated use getTransactionInformation instead
+     * @return string
+     */
+    public function getVerwendungszweck(){
+        return $this->verwendungszweck;
+    }
+
+    /**
+     * Set Transaction information for direct debit
+     * @param string $transActionInformation
+     * @return \SepaBuchung
+     */
+    public function setTransactionInformation($transActionInformation){
+        $this->verwendungszweck = $this->normalizeString($transActionInformation);
+        return $this;
+    }
+
+    /**
+     * Get Transaction information for direct debit
+     * @return string
+     */
+    public function getTransactionInformation(){
+        return $this->verwendungszweck;
+    }
+
+    /**
+     * Set Payment Amount 
+     * @deprecated since version 0.2
+     * @deprecated use setAmount instead
+     * @param double $betrag
+     * @return \SepaBuchung
+     */
+    public function setBetrag($betrag) {
+        $this->amount = $betrag;
+        return $this;
+    }
+
+    /**
+     * Get payment amount
+     * @deprecated since version 0.2
+     * @deprecated use getAmount instead
+     * @return double
+     */
+    public function getBetrag(){
+        return $this->amount;
+    }
+
+    /**
+     * Set Payment amount
+     * @param double $amount
+     * @return \SepaBuchung
+     */
+    public function setAmount($amount){
+        $this->amount = (double)$amount;
+        return $this;
+    }
+
+    /**
+     * Get Payment amount
+     * @return double
+     */
+    public function getAmount(){
+        return $this->amount;
+    }
+
+    /**
+     * Set Currency of direct debit
+     * @param string $currency
+     * @return \SepaBuchung
+     */
+    public function setCurrency($currency){
+        $this->currency = $currency;
+        return $this;
+    }
+
+    /**
+     * Get Currency
+     * @return string
+     */
+    public function getCurrency(){
+        return $this->currency;
+    }
 	
-	function __construct() {
-		$this->end2end = "NOTPROVIDED";
-	}
-
-	function setEnd2End($end2end) {
-		$this->end2end = $this->normalizeString($end2end);
-	}
-
-	function setIban($iban) {
-		$this->iban = str_replace(' ','',$iban);
-	}
-
-	function setBic($bic) {
-		$this->bic = $bic;
-	}
-
-	function setName($name) {
-		$this->kontoinhaber = $this->normalizeString($name);
-	}
-
-	function setVerwendungszweck($verwendungszweck) {
-		$this->verwendungszweck = $this->normalizeString($verwendungszweck);
-	}
-
-	function setBetrag($betrag) {
-		$this->amount = $betrag;
-	}
-	
-    /*
-     * Methode zum Setzen des Mandates - notwendig beim Generieren von Lastschriften. Wenn gewünscht kann
+    /**
+     * Methode zum Setzen des Mandates - notwendig beim Generieren von Lastschriften. Wenn gew�nscht kann
      * nur die Mandats-ID gesetzt werden, hierbei wird das aktuelle Tagesdatum als Datum der Mandatserteilung
-     * genommen. Das Datum ist im Format (YYYY-mm-dd - bsp. 2013-11-02 zu übergeben)
+     * genommen. Das Datum ist im Format (YYYY-mm-dd - bsp. 2013-11-02 zu �bergeben)
      * 
      * @param String $id
      * @param String $mandatDatum
-     * @param boolean $mandatAenderung - true wenn das Mandat seit letzer Erteilung geändert wurde
+     * @param boolean $mandatAenderung - true wenn das Mandat seit letzer Erteilung ge�ndert wurde
+     * @deprecated since version 0.2
+     * @deprecated use setMandatId, setMandateChange and setDueDate instead
      */
-	function setMandat($id, $mandatDatum = null, $mandatAenderung = true) {
-		$this->mandatId = $id;
-		$this->mandatAenderung = $mandatAenderung;
+    public function setMandat($id, $mandatDatum = null, $mandatAenderung = true) {
+        $this->setMandateId($id);
+        $this->setMandateChange($mandatAenderung);
+        $this->setMandateDate($mandatDatum);
+        return $this;
+    }
+    
+    /**
+     * Set mandate ID
+     * @param string $mandatId
+     */
+    public function setMandateId($mandatId){
+        $this->mandatId = $mandatId;
+        return $this;
+    }
+    
+    /**
+     * Get Mandate ID 
+     * @return type
+     */
+    public function getMandateId(){
+        return $this->mandatId;
+    }
+    
+    /**
+     * Set marking flag for change
+     * @param string $mandatAenderung
+     * @return \SepaBuchung
+     */
+    public function setMandateChange($mandatAenderung = false){
+        $this->mandatAenderung = (bool)$mandatAenderung;
+        return $this;
+    }
+    
+    /**
+     * get marking flag for change
+     * @return string
+     */
+    public function getMandateChange(){
+        return $this->mandatAenderung;
+    }
+    
+    /**
+     * Set mandate date
+     * @param string $mandateDate
+     * @return \SepaBuchung
+     */
+    public function setMandateDate($mandateDate){
+        if(empty($mandateDate)){
+            $this->mandatDatum = date('Y-m-d');	
+        }else{
+            $this->mandatDatum = $mandateDate;
+        }
+        
+        return $this;
+    }
+    
+    /**
+     * get Mandate date
+     * @return string
+     */
+    public function getMandateDate(){
+        return $this->mandatDatum;
+    }
 
-		if (!isset($mandatDatum)) {
-			$this->mandatDatum = date('Y-m-d', time());	
-		} else {
-			$this->mandatDatum = $mandatDatum;
-		}
-	}
-	
-	function normalizeString($input) {
-		// Only below characters can be used within the XML tags according the guideline.
-		// a b c d e f g h i j k l m n o p q r s t u v w x y z
-		// A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
-		// 0 1 2 3 4 5 6 7 8 9
-		// / - ? : ( ) . , ‘ +
-		// Space
-		//
-		// Create a normalized array and cleanup the string $XMLText for unexpected characters in names
-		$normalizeChars = array(
-				'Á'=>'A', 'À'=>'A', 'Â'=>'A', 'Ã'=>'A', 'Å'=>'A', 'Ä'=>'Ae', 'Æ'=>'AE', 'Ç'=>'C',
-				'É'=>'E', 'È'=>'E', 'Ê'=>'E', 'Ë'=>'E', 'Í'=>'I', 'Ì'=>'I', 'Î'=>'I', 'Ï'=>'I', 'Ð'=>'Eth',
-				'Ñ'=>'N', 'Ó'=>'O', 'Ò'=>'O', 'Ô'=>'O', 'Õ'=>'O', 'Ö'=>'O', 'Ø'=>'O',
-				'Ú'=>'U', 'Ù'=>'U', 'Û'=>'U', 'Ü'=>'Ue', 'Ý'=>'Y',
-	
-				'á'=>'a', 'à'=>'a', 'â'=>'a', 'ã'=>'a', 'å'=>'a', 'ä'=>'ae', 'æ'=>'ae', 'ç'=>'c',
-				'é'=>'e', 'è'=>'e', 'ê'=>'e', 'ë'=>'e', 'í'=>'i', 'ì'=>'i', 'î'=>'i', 'ï'=>'i', 'ð'=>'eth',
-				'ñ'=>'n', 'ó'=>'o', 'ò'=>'o', 'ô'=>'o', 'õ'=>'o', 'ö'=>'oe', 'ø'=>'o',
-				'ú'=>'u', 'ù'=>'u', 'û'=>'u', 'ü'=>'ue', 'ý'=>'y',
-	
-				'ß'=>'ss', 'þ'=>'thorn', 'ÿ'=>'y',
-	
-				'&'=>'u.', '@'=>'at', '#'=>'h', '$'=>'s', '%'=>'perc', '^'=>'-','*'=>'-'
-						);
-	
-		$output = strtr($input, $normalizeChars);
-	
-		return $output;
-	}
+    private function normalizeString($input) {
+        // Only below characters can be used within the XML tags according the guideline.
+        // a b c d e f g h i j k l m n o p q r s t u v w x y z
+        // A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+        // 0 1 2 3 4 5 6 7 8 9
+        // / - ? : ( ) . , � +
+        // Space
+        //
+        // Create a normalized array and cleanup the string $XMLText for unexpected characters in names
+        $normalizeChars = array(
+            '�'=>'A', '�'=>'A', '�'=>'A', '�'=>'A', '�'=>'A', '�'=>'Ae', '�'=>'AE', '�'=>'C',
+            '�'=>'E', '�'=>'E', '�'=>'E', '�'=>'E', '�'=>'I', '�'=>'I', '�'=>'I', '�'=>'I', '�'=>'Eth',
+            '�'=>'N', '�'=>'O', '�'=>'O', '�'=>'O', '�'=>'O', '�'=>'O', '�'=>'O',
+            '�'=>'U', '�'=>'U', '�'=>'U', '�'=>'Ue', '�'=>'Y',
+
+            '�'=>'a', '�'=>'a', '�'=>'a', '�'=>'a', '�'=>'a', '�'=>'ae', '�'=>'ae', '�'=>'c',
+            '�'=>'e', '�'=>'e', '�'=>'e', '�'=>'e', '�'=>'i', '�'=>'i', '�'=>'i', '�'=>'i', '�'=>'eth',
+            '�'=>'n', '�'=>'o', '�'=>'o', '�'=>'o', '�'=>'o', '�'=>'oe', '�'=>'o',
+            '�'=>'u', '�'=>'u', '�'=>'u', '�'=>'ue', '�'=>'y',
+
+            '�'=>'ss', '�'=>'thorn', '�'=>'y',
+
+            '&'=>'u.', '@'=>'at', '#'=>'h', '$'=>'s', '%'=>'perc', '^'=>'-','*'=>'-'
+        );
+
+        $output = strtr($input, $normalizeChars);
+        return $output;
+    }
+    
+    /**
+     * Get Copy of all attributes as array
+     * @return array
+     */
+    public function getArrayCopy(){
+        return get_object_vars($this);
+    }
 }
+
+<?php
+/*
+ * SepaXmlCreator - by Thomas Schiffler.de
+ * http://www.ThomasSchiffler.de/2013_09/code-schnipsel/sepa-sammeluberweisung-xml-datei-mit-php-erstellen
+ *
+ * Copyright (c) 2013 Thomas Schiffler (http://www.ThomasSchiffler.de
+ * GPL (http://www.opensource.org/licenses/gpl-license.php) license.
+ *
+ */
 
 class SepaXmlCreator {
 	var $buchungssaetze = array();
@@ -422,6 +657,11 @@ class SepaXmlCreator {
 		}
 	}
 }
+
+
+
+?>
+
 
 
 
