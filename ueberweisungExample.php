@@ -11,9 +11,18 @@
 	 * erster Parameter = Name
 	 * zweiter Parameter = IBAN
 	 * dritter Paramenter = BIC
-	 */ 
-	$creator->setAccountValues('mein Name', 'meine IBAN', 'meine BIC');
+         * 
+         * dies ist Vergangenheit (alte Methoden bleiben),
+         * stattdesse um dem OOP Standard nahe zu gehen, sind nun drei weitere
+         * Methoden implementiert:
+         * 
+         * 
+	 */
 	
+        $creator->setAccountName('mein Name');
+        $creator->setAccountIban("meine IBAN");
+        $creator->setAccountBic("meine BIC");
+        
 	/*
 	 * Mit Hilfe eines Ausführungs-Offsets können Sie definieren, wann die Buchung durchgeführt wird. Die Anzahl 
 	 * der übergebenen Tage wird auf den aktuellen Kalendertag addiert
@@ -33,7 +42,7 @@
 	// Erzeugung einer neuen Überweisung
 	$buchung = new SepaBuchung();
 	// gewünschter Überweisungsbetrag
-	$buchung->setBetrag(10);
+	$buchung->setAmount(10);
 	// gewünschte End2End Referenz (OPTIONAL)
 	$buchung->setEnd2End('ID-00002');
 	// BIC des Empfängerinstituts
@@ -43,20 +52,20 @@
 	// IBAN des Zahlungsmpfängers
 	$buchung->setIban('DE1234566..');
 	// gewünschter Verwendungszweck (OPTIONAL)
-	$buchung->setVerwendungszweck('Test Buchung');
+	$buchung->setTransactionInformation('Test Buchung');
 	// Buchung zur Liste hinzufügen
-	$creator->addBuchung($buchung); 
+	$creator->addPayment($buchung); 
 	
 	// Dies kann beliebig oft wiederholt werden ...
 	$buchung = new SepaBuchung();
-	$buchung->setBetrag(7);
+	$buchung->setAmount(7); // double wert
 	$buchung->setBic('EMPFAENGERBIC');
 	$buchung->setName('Mustermann, Max');
 	$buchung->setIban('DE1234566..');
-	$creator->addBuchung($buchung);
+	$creator->addPayment($buchung);
 	
 	// Nun kann die XML-Datei über den Aufruf der entsprechenden Methode generiert werden
-	$sepaxml = $creator->generateSammelueberweisungXml();
+	$sepaxml = $creator->generateMassPaymentXML();
 	echo $sepaxml;
 	file_put_contents('sepaueberweisung-example.xml', $sepaxml);
 	$creator->validateUeberweisungXml('sepaueberweisung-example.xml');
