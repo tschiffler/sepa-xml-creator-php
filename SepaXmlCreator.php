@@ -7,6 +7,8 @@
  * GPL (http://www.opensource.org/licenses/gpl-license.php) license.
  *
  */
+ 
+ //20160728 pain Update und IBANONLY eingefuehrt
 
 class SepaBuchung{
 	var $end2end, $iban, $bic, $kontoinhaber, $verwendungszweck, $amount;
@@ -166,11 +168,11 @@ class SepaXmlCreator {
 		// Build Document-Root
 		$document = $dom->createElement('Document');
 		if ($this->mode == 2) {
-			$document->setAttribute('xmlns', 'urn:iso:std:iso:20022:tech:xsd:pain.008.002.02');
-			$document->setAttribute('xsi:schemaLocation', 'urn:iso:std:iso:20022:tech:xsd:pain.008.002.02 pain.008.002.02.xsd');
+			$document->setAttribute('xmlns', 'urn:iso:std:iso:20022:tech:xsd:pain.008.003.02');
+			$document->setAttribute('xsi:schemaLocation', 'urn:iso:std:iso:20022:tech:xsd:pain.008.003.02 pain.008.003.02.xsd');
 		} else {
-			$document->setAttribute('xmlns', 'urn:iso:std:iso:20022:tech:xsd:pain.001.002.03');
-			$document->setAttribute('xsi:schemaLocation', 'urn:iso:std:iso:20022:tech:xsd:pain.001.002.03 pain.001.002.03.xsd');
+			$document->setAttribute('xmlns', 'urn:iso:std:iso:20022:tech:xsd:pain.001.003.03');
+			$document->setAttribute('xsi:schemaLocation', 'urn:iso:std:iso:20022:tech:xsd:pain.001.003.03 pain.001.003.03.xsd');
 		}
 		$document->setAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');		
 		$dom->appendChild($document);
@@ -194,6 +196,7 @@ class SepaXmlCreator {
 		$header->appendChild($dom->createElement('MsgId', $this->accountBic . '00' . date('YmdHis', $creationTime)));
 		$header->appendChild($dom->createElement('CreDtTm', date('Y-m-d', $creationTime) . 'T' . date('H:i:s', $creationTime) . '.000Z'));
 		$header->appendChild($dom->createElement('NbOfTxs', count($this->buchungssaetze)));
+		$header->appendChild($dom->createElement('CtrlSum', number_format($this->getUmsatzsumme(), 2, '.', '')));
 		$header->appendChild($initatorName = $dom->createElement('InitgPty'));
 		$initatorName->appendChild($dom->createElement('Nm', $this->accountName));
 
@@ -324,14 +327,23 @@ class SepaXmlCreator {
 			}
 
 			// Institut
-			if ($this->mode == 2) {
-				$buchung->appendChild($tmp1 = $dom->createElement('DbtrAgt'));
+			if ($buchungssatz->bic != 'IBANONLY') {
+				if ($this->mode == 2) {
+					$buchung->appendChild($tmp1 = $dom->createElement('DbtrAgt'));
+				} else {
+					$buchung->appendChild($tmp1 = $dom->createElement('CdtrAgt'));
+				}
+				$tmp1->appendChild($tmp2 = $dom->createElement('FinInstnId'));
+				$tmp2->appendChild($dom->createElement('BIC', $buchungssatz->bic));
 			} else {
-				$buchung->appendChild($tmp1 = $dom->createElement('CdtrAgt'));
+				if ($this->mode == 2) {
+					$buchung->appendChild($tmp1 = $dom->createElement('DbtrAgt'));
+					$tmp1->appendChild($tmp2 = $dom->createElement('FinInstnId'));
+					$tmp2->appendChild($tmp3 = $dom->createElement('Othr'));
+					$tmp3->appendChild($dom->createElement('Id', 'NOTPROVIDED'));
+				}
 			}
-			$tmp1->appendChild($tmp2 = $dom->createElement('FinInstnId'));
-			$tmp2->appendChild($dom->createElement('BIC', $buchungssatz->bic));
-
+				
 			// Inhaber
 			if ($this->mode == 2) {
 				$buchung->appendChild($tmp1 = $dom->createElement('Dbtr'));
@@ -376,11 +388,11 @@ class SepaXmlCreator {
 	}
 	
 	public function validateBasislastschriftXml($xmlfile) {
-		return $this->validateXML($xmlfile, 'pain.008.002.02.xsd');
+		return $this->validateXML($xmlfile, 'pain.008.003.02.xsd');
 	}
 	
 	public function validateUeberweisungXml($xmlfile) {
-		return $this->validateXML($xmlfile, 'pain.001.002.03.xsd');
+		return $this->validateXML($xmlfile, 'pain.001.003.03.xsd');
 	}
 	
 	protected function validateXML($xmlfile, $xsdfile) {
